@@ -60,7 +60,7 @@ typedef struct Node_str{
 
 typedef struct graph_str{
   Node *graphNodes[MAXV+1];  /*adjacency matrix*/
-  int degree[MAXV+1];       /*Keeps the number of conexions for each single Node*/
+  int degree[MAXV+1];       /*Number of conexions for each single Node (counts the number of nodes in each index of the adjacency matrix)*/
   int nvertices;            /*number of vertices in the graph*/
   int nedges;               /*Number of conexions within thhe whole graph*/
   bool directed;            /*is the graph directed?*/
@@ -75,7 +75,6 @@ typedef struct graph_str{
  *************
 */
 
-
 void initialize_graph(graph *g, bool directed){
 
   g->nvertices=0;
@@ -88,13 +87,14 @@ void initialize_graph(graph *g, bool directed){
 
 }
 
+//Conexion without weight
+//Creates a conexion between two nodes. Weight is set to 0
 void insert_edge(graph *g, int x, int y, bool directed){
   //
   Node *p;
   p=(Node*)malloc(sizeof(Node));
 
   p->weight=0;
-
   p->id = y;
   p->next=g->graphNodes[x];
   g->graphNodes[x]=p;
@@ -106,9 +106,9 @@ void insert_edge(graph *g, int x, int y, bool directed){
       g->nedges ++;
 }
 
-
+//Conexion with weight
+//Creates a conexion between two nodes. Requires the weight of each node
 void insert_edge_w(graph *g, int x, int y, bool directed,int wx, int wy){
-  //
   Node *p;
   p=(Node*)malloc(sizeof(Node));
 
@@ -124,7 +124,7 @@ void insert_edge_w(graph *g, int x, int y, bool directed,int wx, int wy){
       g->nedges ++;
 }
 
-
+//Prints Graph adjacency matrix. Each node has its weight in parenthesis
 void printGraph(graph *g){
   Node *p;
   cout<<"flag\n";
@@ -137,4 +137,124 @@ void printGraph(graph *g){
     }
     printf("\n");
   }
+}
+
+
+/*****************************************
+  GRAPH traversal
+******************************************
+*/
+
+//The following arrays supports the graph traversal algorithms. Results can be read
+//at the parents array
+bool processed [MAXV+1];
+bool discovered [MAXV+1];
+int parents[MAXV+1];
+
+//This function initialize the arrays above. It just reset all the values of the previous arrays
+//In order to avoid conflicts between the search operations
+void initialize_search(graph *g){
+  for(int i=1; i<=g->nvertices;i++){
+    processed[i]=discovered[i]=false;
+    parents[i]=-1;
+  }
+}
+
+//This traversal algorithm uses Breadth-first search.
+//It can be used to find the shortest path between two nodes (doesn't care about weights)
+
+void traversal(graph *g, int start){
+  queue <int> q;
+  int v;
+  int y;
+  edgenode *p;
+
+  q.push(start);
+  discovered[start] =true;
+  while(q.size()!=0){
+    v=q.front();
+    q.pop();
+    //pre processing
+    processed[v]=true;
+    p=g->edges[v];
+    while(p!=NULL){       /*go over adjency list*/
+      y=p->y;
+      if((processed[y]==false)||g->directed){
+        //Process edge  here!
+      }
+      if(discovered[y]==false){
+        q.push(y);
+        discovered[y]=true;
+        parents[y]=v;
+      }
+      p=p->next;
+    }
+    //Post processing Vertex
+  }
+}
+
+
+//dijkstra algorithm: Finds the shortest path between two nodes taking into account the weight
+int MAXINT = numeric_limits<int>::max();    //max value required by dijkstra algorithm
+void dijkstra(graph *g, int start){
+  int i;
+  edgenode *p;
+  bool intree[MAXV+1];
+  int distance[MAXV+1];
+  int v;
+  int w;
+  int weight;
+  int dist;
+
+  for(int i=1; i<=g->nvertices; i++){
+    intree[i]=false;
+    distance[i]=MAXINT;
+    parents[i]=-1;
+  }
+  distance[start]=0;
+  v=start;
+  while(intree[v]==false){
+    intree[v]=true;
+    p=g->edges[v];
+    while(p!=NULL){
+      w=p->y;
+      weight=p->weight;
+      if(distance[w]>(distance[v]+weight)){
+        distance[w]=distance[v]+weight;
+        parents[w]=v;
+      }
+      p=p->next;
+    }
+    v=1;
+    dist=MAXINT;
+    for(i=1; i<=g->nvertices;i++){
+      if((intree[i]==false)&&(dist>distance[i]) ){
+        dist=distance[i];
+        v=i;
+      }
+    }
+  }
+}
+
+//the information to find the shortest path is being store in the parents array
+//after each traversal algorithm runs.
+
+/**************
+  The following functions use the information stored in the parent array to find
+  the shortest path
+ *************
+*/
+
+void find_path_helper(int start, int end, int parents[]){
+  if((start==end)||(end==-1))
+    //Recursion base case
+    printf("%d->",start);
+  else{
+    //Track path
+    find_path_helper(start,parents[end],parents);
+    printf(" %d->", end);
+  }
+}
+void find_path(int start, int end, int parents[]){
+  find_path_helper(start,end, parents);
 }
